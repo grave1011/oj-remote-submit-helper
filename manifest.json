@@ -1,0 +1,34 @@
+{
+  "manifest_version": 3,
+  "name": "OJ Remote Submit Helper Lite",
+  "short_name": "OJ Submit Lite",
+  "version": "0.2.2",
+  "description": "Browser-assisted remote submission helper with manual final confirmation for AtCoder, Codeforces, and Codeforces Gym.",
+  "permissions": [
+    "tabs",
+    "scripting"
+  ],
+  "host_permissions": [
+    "https://atcoder.jp/*",
+    "https://codeforces.com/*",
+    "<all_urls>"
+  ],
+  "background": {
+    "service_worker": "background.js"
+  },
+  "homepage_url": "https://github.com/grave1011/sdustjudge",
+  "content_scripts": [
+    {
+      "matches": [
+        "<all_urls>"
+      ],
+      "js": [
+        "page-bridge.js"
+      ],
+      "run_at": "document_start"
+    }
+  ],
+  "action": {
+    "default_title": "OJ Remote Submit Helper Lite"
+  }
+}
