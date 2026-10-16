@@ -1,106 +1,76 @@
-# OJ Remote Submit Helper Lite
+# 在线评测远程提交助手（精简版）
 
-Chrome MV3 extension for browser-assisted remote submission in SDUSTJudge.
+供 SDUSTJudge 使用的 Chrome 扩展，支持 AtCoder、Codeforces、Codeforces Gym，以及洛谷普通 P/B 题。
 
-Supported targets:
+## 使用方式
 
-- AtCoder
-- Codeforces
-- Codeforces Gym
+1. 打开 `chrome://extensions`，开启“开发者模式”，选择“加载已解压的扩展程序”，加载本目录。
+2. 在同一个浏览器配置中登录目标评测网站，然后从本站发起浏览器提交。
+3. 插件打开原站提交页面，代填题目、语言和代码。检查内容后，自行完成人机验证并点击原站提交按钮。
+4. 插件识别提交编号，并将提交信息和可读取的结果返回本站。
 
-This extension is used when SDUSTJudge remote judge runs in browser-submit
-mode. It opens the target submit page in the user's browser, fills the form as
-far as the site allows, waits for the user to finish any required verification
-or final click, and then returns the detected submission id back to SDUSTJudge.
+升级时替换完整插件目录（包括 `platforms/`），重新加载扩展并刷新本站。
 
-It does not send AtCoder or Codeforces cookies, CSRF tokens, passwords, or
-login credentials to the SDUSTJudge backend.
+洛谷功能须由部署方启用，并配置平台与语言映射；默认语言绑定仅提供 C++11（原站编号 4）。洛谷结果仅供独立练习，属于未经独立核验的浏览器报告，不计入课程、考试或正式排名。
 
-## Directory layout
+## 提交与恢复
 
-- `manifest.json`: extension manifest
-- `background.js`: submit orchestration and site-specific automation
-- `page-bridge.js`: bridge between SDUSTJudge page and extension runtime
-- `CHANGELOG.md`: release history
-- `PRIVACY.md`: data handling statement
-- `RELEASE.md`: packaging and distribution notes
-- `build-release.sh`: build a release zip for upload or manual distribution
+- 所有平台均保留人工验证和最终提交步骤，插件不会自动点击提交或重发提交请求。
+- AtCoder 会等待标签页导航、人工验证及编辑器初始化完成，再代填并核对代码；验证表单不会被当作代码提交表单，代填不依赖 CSRF 令牌，认证由原站在人工提交时处理。语言映射可填写原站编号或名称，名称会匹配当前题目的实际选项；原站已移除的语言会明确报错并列出可选项，不会自动更换语言标准。
+- Codeforces 和 Gym 同样等待页面导航、验证及编辑器初始化完成；核对可见编辑器与源码字段后才结束代填，不增加页面界面。页面加载、表单准备和等待人工提交共用默认 60 秒任务预算。停在原站“我的提交”列表时，也会识别提交编号；列表时间有偏差时，按同一编号核对原站 API 的账号、题目和时间戳，无法核对时不会放行旧记录。识别编号后，最多额外观察 20 秒以获取编译报错，单次读取限时 1.5 秒；取得其他终态后立即结束，详情缺失或原站拒绝读取时仍回传原编号，由本站继续获取总结果。
+- 洛谷代填前核对当前账号、题目及允许的语言，通过原站语言控件和编辑器写入内容。
+- 洛谷提交观察只绑定语言和代码摘要匹配、且成功响应明确返回的提交编号，随后读取该条记录的状态、编译信息、测试点、耗时与内存。
+- 已绑定编号的洛谷任务可继续观察原记录；未绑定编号且丢失观察状态的任务保持未知，不会自动重新提交。
 
-## Installation for local testing
+## 隐私与权限
 
-1. Open `chrome://extensions`.
-2. Enable Developer mode.
-3. Click `Load unpacked`.
-4. Select this directory: `chrometools/oj-remote-submit-helper-lite`.
-5. Log in to the target OJ in the same Chrome profile.
-6. Trigger browser-submit mode from SDUSTJudge.
+插件仅处理本次任务所需的平台、题目、语言、用户选择提交的代码，以及远程提交编号、链接和结果。洛谷记录读取还会核对账号、题目、语言与可选的代码摘要，处理编译诊断、分数、测试点、耗时和内存；原记录源码不会包含在结果回传中。
 
-## Behavior by platform
+远程请求由用户浏览器直接访问原站，使用原站现有登录会话。插件通过本站页面桥接回传任务结果，不向本站后端传输原站 Cookie、密码、登录凭据或 CSRF 令牌，不读取提交请求头或保存验证码，也不访问无关页面进行统计或广告分析。
 
-### AtCoder
+洛谷页面与扩展的会话存储只保留有界的任务元数据，例如请求编号、账号与题目编号、语言、代码摘要、时间、阶段和已绑定的提交编号；不保存源码或认证材料。这些信息用于页面跳转或后台休眠后的记录恢复。
 
-- Opens the AtCoder submit page.
-- Waits for verification if needed.
-- Fills task, language, and source code.
-- Does not click the final `Submit` button on behalf of the user.
-- Watches the page after the user's manual submit and returns the detected
-  submission id and status.
+| 权限 | 用途 |
+| --- | --- |
+| `tabs` | 打开并观察本次任务的原站标签页。 |
+| `scripting` | 在支持的原站页面运行代填和记录识别逻辑。 |
+| `storage` | 在扩展会话中保存洛谷任务元数据。 |
 
-### Codeforces
+原站访问范围为 `https://atcoder.jp/*`、`https://codeforces.com/*` 和 `https://www.luogu.com.cn/*`。本站桥接仅匹配本地 HTTP 地址（`localhost`、`127.0.0.1`、`[::1]`）和 HTTPS 地址 `sdustjudge.cn` 及其子域名。自定义部署域名需修改 `manifest.json` 并重新加载扩展。
 
-- Opens the contest or problemset submit page.
-- Checks whether the current browser session appears logged in.
-- Fills contest, problem, language, and source code.
-- Does not bypass Cloudflare, Turnstile, or similar anti-bot checks.
-- Does not click the final `Submit` button on behalf of the user.
-- Watches the page after the user's manual submit and returns the detected
-  submission id and status.
+## 代码结构
 
-### Codeforces Gym
+| 文件或目录 | 职责 |
+| --- | --- |
+| `manifest.json` | 扩展配置和权限。 |
+| `background.js` | 公共校验和消息分发。 |
+| `page-bridge.js` | 本站页面与扩展之间的通信。 |
+| `platforms/atcoder.js` | AtCoder 代填与人工提交识别。 |
+| `platforms/codeforces.js` | Codeforces 和 Gym 代填与人工提交识别。 |
+| `platforms/luogu.js` | 洛谷代填、提交观察、记录读取和任务恢复。 |
+| `tools/` | 手动诊断工具，不随插件包发布。 |
+| `tests/` | 合成页面回归检查，不随插件包发布。 |
+| `build-release.sh` | 生成插件压缩包。 |
 
-- Uses the same browser-submit flow as Codeforces.
-- Supports Gym submit and submission URL detection when the remote source points
-  to a Gym contest.
+## 诊断与打包
 
-## Lite behavior
+AtCoder 代填异常时，在原站控制台运行 `JSON.stringify(window.__ojLiteAtCoderPreparation, null, 2)`，可读取实际执行版本、阶段和语言匹配结果。诊断状态仅保存在当前页面内存中，不包含源码或认证信息；未输出状态表示该页面尚未执行代填脚本。
 
-This lite variant keeps the final confirmation step manual on every supported
-platform so the user interaction model stays consistent:
+Codeforces 和 Gym 对应命令为 `JSON.stringify(window.__ojLiteCodeforcesPreparation, null, 2)`。
 
-- AtCoder: fill only, manual final submit
-- Codeforces: fill only, manual final submit
-- Codeforces Gym: fill only, manual final submit
+CF 编译报错未返回时，在本次原站标签页运行 `JSON.stringify(window.__ojLiteCodeforcesCompileObservation, null, 2)`，可查看固定提交编号、读取阶段及接口状态码；输出不含代码、编译日志或认证信息。
 
-## Permissions
+在洛谷原站提交区域展开语言下拉框后，可在开发者控制台运行 `tools/inspect-luogu-page.js`，采集控件和字段类型。记录页请提供输出中的 `recordShapes`、`contextFreshness` 和 `documentRead`。脚本必要时只读请求当前页面，不提交代码，也不输出源码或认证信息。
 
-- `tabs`: open and inspect submit tabs created for the browser-submit flow
-- `scripting`: run page-context helpers on supported submit pages
-- `host_permissions`:
-  - `https://atcoder.jp/*`
-  - `https://codeforces.com/*`
-  - `<all_urls>` for the SDUSTJudge page bridge and browser-submit entry page
-
-If Chrome Web Store review requires tighter scope, the first place to refine is
-the broad `<all_urls>` match used by the bridge.
-
-## Packaging
-
-Run:
+在本插件仓库根目录安装测试依赖并运行回归检查：
 
 ```bash
-./build-release.sh
+npm ci
+npx playwright install chromium
+npm test
+npm run test:browser
 ```
 
-The script writes a versioned zip into `dist/`.
+检查使用合成页面，不登录真实账号或向原站提交，不能替代真实账号验收。
 
-## Distribution recommendation
-
-- Primary public distribution: Chrome Web Store
-- Internal testing / temporary distribution: release zip from the repository
-
-## Related files in the main project
-
-- `frontend/src/views/problems/Problems.vue`
-- `frontend/src/views/problems/SolutionResult.vue`
-
-Those pages trigger the browser-submit flow and wait for extension callbacks.
+在插件目录执行 `npm run build`（或 `bash build-release.sh`），压缩包生成于 `dist/`，文件名包含扩展版本号。支持与问题反馈由 SDUSTJudge 项目维护者或部署方负责。

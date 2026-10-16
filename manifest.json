@@ -2,16 +2,17 @@
   "manifest_version": 3,
   "name": "OJ Remote Submit Helper Lite",
   "short_name": "OJ Submit Lite",
-  "version": "0.2.2",
-  "description": "Browser-assisted remote submission helper with manual final confirmation for AtCoder, Codeforces, and Codeforces Gym.",
+  "version": "0.3.11",
+  "description": "Browser-assisted remote submissions for AtCoder, Codeforces, Gym and Luogu, with manual verification and final submit.",
   "permissions": [
     "tabs",
-    "scripting"
+    "scripting",
+    "storage"
   ],
   "host_permissions": [
     "https://atcoder.jp/*",
     "https://codeforces.com/*",
-    "<all_urls>"
+    "https://www.luogu.com.cn/*"
   ],
   "background": {
     "service_worker": "background.js"
@@ -20,7 +21,11 @@
   "content_scripts": [
     {
       "matches": [
-        "<all_urls>"
+        "http://localhost/*",
+        "http://127.0.0.1/*",
+        "http://[::1]/*",
+        "https://sdustjudge.cn/*",
+        "https://*.sdustjudge.cn/*"
       ],
       "js": [
         "page-bridge.js"

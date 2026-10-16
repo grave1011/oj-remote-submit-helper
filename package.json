@@ -1,0 +1,13 @@
+{
+  "name": "oj-remote-submit-helper-lite",
+  "version": "0.3.11",
+  "private": true,
+  "scripts": {
+    "test": "node --test tests/platform-routing.test.cjs",
+    "test:browser": "node tests/atcoder-browser-flow.cjs && node tests/codeforces-browser-flow.cjs && node tests/luogu-browser-flow.cjs",
+    "build": "bash build-release.sh"
+  },
+  "devDependencies": {
+    "playwright": "1.61.1"
+  }
+}
